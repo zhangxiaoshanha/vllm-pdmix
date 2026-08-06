@@ -107,8 +107,8 @@ class AsyncIntermediateTensors(IntermediateTensors):
                 logger.info("[EXP] after_handle_wait no_tensor (merge_path)")
         except Exception as e:
             logger.info("[EXP] after_handle_wait err=%s", e)
-        # SYNC_B: sync current stream after irecv handles complete.
-        torch.npu.current_stream().synchronize()
+        # SYNC_B: temporarily disabled for root cause probe.
+        # torch.npu.current_stream().synchronize()
         if self._comm_postprocess:
             for fn in self._comm_postprocess:
                 fn()
