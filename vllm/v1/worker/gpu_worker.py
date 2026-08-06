@@ -90,6 +90,8 @@ class AsyncIntermediateTensors(IntermediateTensors):
         if self._comm_handles:
             for handle in self._comm_handles:
                 handle.wait()
+        # SYNC_B: sync current stream after irecv handles complete.
+        torch.npu.current_stream().synchronize()
         if self._comm_postprocess:
             for fn in self._comm_postprocess:
                 fn()
