@@ -90,6 +90,23 @@ class AsyncIntermediateTensors(IntermediateTensors):
         if self._comm_handles:
             for handle in self._comm_handles:
                 handle.wait()
+        # EXPERIMENT: probe irecv data visibility right after handle.wait(),
+        # BEFORE SYNC_B. If data is garbage/NaN here, handle.wait() didn't
+        # make irecv writes visible to the default stream.
+        try:
+            _ts = object.__getattribute__(self, "tensors")
+            _found = False
+            for _k, _v in _ts.items():
+                if isinstance(_v, torch.Tensor) and _v.numel() > 0 and "__" not in _k:
+                    _s = float(_v.sum().item())
+                    logger.info("[EXP] after_handle_wait key=%s sum=%.4f nan=%s",
+                                _k, _s, _s != _s)
+                    _found = True
+                    break
+            if not _found:
+                logger.info("[EXP] after_handle_wait no_tensor (merge_path)")
+        except Exception as e:
+            logger.info("[EXP] after_handle_wait err=%s", e)
         # SYNC_B: sync current stream after irecv handles complete.
         torch.npu.current_stream().synchronize()
         if self._comm_postprocess:
